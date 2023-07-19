@@ -1,0 +1,39 @@
+
+
+using System.IO;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+namespace Alterna
+{
+    /*public class FileDownloaderHttp : IFileDownloader
+    {
+        public byte[] DownloadFile(string fileUrl)
+        {
+            var response = await this.GetFile(fileUrl);
+            if ( response.IsSuccessStatusCode )
+            {
+                using ( MemoryStream memoryStream = new MemoryStream())
+                {
+                    await response.Content.CopyToAsync(memoryStream);
+                    var tmpData = memoryStream.ToArray();
+                    byte[] data = new byte[tmpData.Length];
+                    tmpData.CopyTo(data, 0);
+                    return data;
+                }
+               
+            }
+            else 
+            {                
+                return null;
+            }
+        }
+
+        public async Task<HttpResponseMessage> GetFile(string fileUrl)
+        {
+            HttpClient client = new HttpClient();
+            HttpResponseMessage response = await client.GetAsync(fileUrl);
+            return  response;
+        }
+    }*/
+}

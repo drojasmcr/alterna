@@ -133,6 +133,8 @@ namespace Alterna
               string fileUrl = item.DownloadLink;
               string fileName = item.FileName;
 
+
+                //Download the file
               IFileDownloader fileDownloader = new LocalFileDownloader();                      
               byte[] data = fileDownloader.DownloadFile(fileUrl);
                             
