@@ -135,34 +135,7 @@ namespace Alterna
 
               IFileDownloader fileDownloader = new LocalFileDownloader();                      
               byte[] data = fileDownloader.DownloadFile(fileUrl);
-              
-              try
-              {
-                  //Download the file
-                  HttpResponseMessage response = await client.GetAsync(fileUrl);
-                  if ( response.IsSuccessStatusCode )
-                  {
-                      using ( MemoryStream memoryStream = new MemoryStream())
-                      {
-                          await response.Content.CopyToAsync(memoryStream);
-                          var tmpData = memoryStream.ToArray();
-                          data = new byte[tmpData.Length];
-                          tmpData.CopyTo(data, 0);
-                      }
-  
-                      log.LogInformation("File downloaded and saved as {filePath}");
-                  }
-                  else 
-                  {
-                      string errorMessage = "Error downloading the file.";
-                      return new OkObjectResult(errorMessage);
-                  }
-              }
-              catch ( Exception ex)
-              {
-                  log.LogError(ex, "An error occurred while downloading the file.");
-                  return new StatusCodeResult(500);
-              }
+                            
   
               //Upload file to Azure
   
