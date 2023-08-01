@@ -44,9 +44,21 @@ namespace Alterna
 
             if (string.IsNullOrEmpty(conversationId)) //If true, then we will go and look for conversations
             {
-                string state = req.Query["STATE"];
-                string createdTimestamp = req.Query["CREATION_TIMESTAMP"];
-                string endTimestamp = req.Query["END_TIMESTAMP"];
+                string state = req.Query["State"];
+                string createdTimestamp = req.Query["CreationDateTime"];
+                
+                DateTime creationDate = DateTime.MinValue;
+
+                if (!string.IsNullOrEmpty(createdTimestamp)) //No timestamp parameter
+                {
+                    creationDate = DateTime.Parse(createdTimestamp);
+                }
+                ConversationHistoryManager conversationHistoryManager = new ConversationHistoryManager(userName, password);
+                List<ConversationHistory> conversations = await conversationHistoryManager.GetConversationsAsync(state, creationDate, log);
+                foreach (var conversation in conversations)
+                {
+                    
+                }
             
             }
 
