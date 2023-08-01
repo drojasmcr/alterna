@@ -26,18 +26,31 @@ namespace Alterna
             ILogger log)
         {
 
-            //Setting up Http client and variables
-            string conversationId = req.Query["ConversationId"];    
-
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder()        
                 .SetBasePath(Environment.CurrentDirectory)
                 .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
 
+            //Add user name and password to the header
             IConfigurationRoot configuration = configurationBuilder.Build();
             string userName = configuration["AuthorizedUser"]; 
             string password = configuration["UserPassword"];
+            HttpClient client = new HttpClient();
+            string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{userName}:{password}"));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);     
 
+            //Setting up Http client and variables
+            string conversationId = req.Query["ConversationId"];    
+
+            if (string.IsNullOrEmpty(conversationId)) //If true, then we will go and look for conversations
+            {
+                string state = req.Query["STATE"];
+                string createdTimestamp = req.Query["CREATION_TIMESTAMP"];
+                string endTimestamp = req.Query["END_TIMESTAMP"];
+            
+            }
+
+           
             string conversationURL = configuration["ConversationURL"] + conversationId;
 
             string connectionString = configuration["azureConnectionString"]; 
@@ -45,9 +58,7 @@ namespace Alterna
 
             string transcripts = string.Empty;
 
-            HttpClient client = new HttpClient();
-            string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{userName}:{password}"));
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);       
+  
 
             //GET CONVERSATION TRANSCRIPTS
             try
