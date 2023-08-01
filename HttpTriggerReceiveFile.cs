@@ -41,8 +41,9 @@ namespace Alterna
 
             //Setting up Http client and variables
             string conversationId = req.Query["ConversationId"];    
+            List<ConversationHistory> conversations = new List<ConversationHistory>(); //Conversations will go here
 
-            if (string.IsNullOrEmpty(conversationId)) //If true, then we will go and look for conversations
+            if (string.IsNullOrEmpty(conversationId)) //If true, then we will go and look for conversations with the other parameters
             {
                 string state = req.Query["State"];
                 string createdTimestamp = req.Query["CreationDateTime"];
@@ -54,12 +55,17 @@ namespace Alterna
                     creationDate = DateTime.Parse(createdTimestamp);
                 }
                 ConversationHistoryManager conversationHistoryManager = new ConversationHistoryManager(userName, password);
-                List<ConversationHistory> conversations = await conversationHistoryManager.GetConversationsAsync(state, creationDate, log);
-                foreach (var conversation in conversations)
+                conversations = await conversationHistoryManager.GetConversationsAsync(state, creationDate, log);
+                if (conversations == null)
                 {
-                    
+                     log.LogError("No conversations found using the parameters provided");
+                    return new StatusCodeResult((int) StatusCodes.Status204NoContent);
                 }
             
+            }
+            else //ConversationId provided, just go and look for a specific conversation
+            {
+                conversations.Add(new ConversationHistory { id = conversationId});
             }
 
            
