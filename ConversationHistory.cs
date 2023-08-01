@@ -90,8 +90,8 @@ namespace Alterna
         public string _type { get; set; }
         public string state { get; set; }
         public object createdTimestamp { get; set; }
-        public object joinedTimestamp { get; set; }
-        public object activationTimestamp { get; set; }
+        public long? joinedTimestamp { get; set; }
+        public long? activationTimestamp { get; set; }
         public long? offboardingTimestamp { get; set; }
         public long? leftTimestamp { get; set; }
         public string leftReason { get; set; }
@@ -148,15 +148,15 @@ namespace Alterna
         public ContextPerson contextPerson { get; set; }
         public EndPerson endPerson { get; set; }
         public List<Participant> participants { get; set; }
-        public long createdTimestamp { get; set; }
-        public long onboardingTimestamp { get; set; }
+        public object createdTimestamp { get; set; }
+        public object onboardingTimestamp { get; set; }
         public long? activationTimestamp { get; set; }
         public long? assigneeJoinTimestamp { get; set; }
-        public long reboardingTimestamp { get; set; }
-        public long offboardingTimestamp { get; set; }
-        public long endTimestamp { get; set; }
-        public long lastMessageTimestamp { get; set; }
-        public long lastCompletedRecordingTimestamp { get; set; }
+        public long? reboardingTimestamp { get; set; }
+        public long? offboardingTimestamp { get; set; }
+        public long? endTimestamp { get; set; }
+        public long? lastMessageTimestamp { get; set; }
+        public long? lastCompletedRecordingTimestamp { get; set; }
         public long? queuedTimestamp { get; set; }
         public string state { get; set; }
         public string initialEngagementType { get; set; }
@@ -168,8 +168,8 @@ namespace Alterna
         public object externalMessengerChannelName { get; set; }
         public object topic { get; set; }
         public object sourceUrl { get; set; }
-        public long scheduledTimestamp { get; set; }
-        public long deletionTimestamp { get; set; }
+        public string scheduledTimestamp { get; set; }
+        public string deletionTimestamp { get; set; }
         public string initialEngagementUrl { get; set; }
         public string awaitedPersonType { get; set; }
         public object awaitedPersonTypeChangeTimestamp { get; set; }
