@@ -52,7 +52,8 @@ namespace Alterna
                 if ( searchResponse.IsSuccessStatusCode )
                 {
                     string responseBody = await searchResponse.Content.ReadAsStringAsync();      
-                    List<ConversationHistory> conversations = JsonSerializer.Deserialize<List<ConversationHistory>>(responseBody);             
+                    List<ConversationHistory> conversations = JsonSerializer.Deserialize<List<ConversationHistory>>(responseBody);    
+                    return conversations;         
                 }
                 else 
                 {
