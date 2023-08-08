@@ -9,11 +9,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Alterna
 {
-    public class ConversationHistoryManager
+    public class ConversationHistoryHandler
     {
         private string User { get; set; }
         private string Password { get; set; }
-        public ConversationHistoryManager(string user, string password)
+        public ConversationHistoryHandler(string user, string password)
         {
             User = user;
             Password = password;

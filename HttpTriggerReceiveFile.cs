@@ -35,13 +35,13 @@ namespace Alterna
             string userName = configuration["AuthorizedUser"]; 
             string password = configuration["UserPassword"];
             //Setting up Http client and variables
-            HttpClient client = new HttpClient();
+            HttpClient client = new();
             string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{userName}:{password}"));
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);     
 
             
             string conversationId = req.Query["ConversationId"];    
-            List<ConversationHistory> conversations = new List<ConversationHistory>(); //Conversations will go here
+            List<ConversationHistory> conversations = new(); //Conversations will go here
 
             if (string.IsNullOrEmpty(conversationId)) //If true, then we will go and look for conversations with the other parameters
             {
@@ -54,11 +54,11 @@ namespace Alterna
                 {
                     creationDate = DateTime.Parse(createdTimestamp);
                 }
-                ConversationHistoryManager conversationHistoryManager = new ConversationHistoryManager(userName, password);
-                conversations = await conversationHistoryManager.GetConversationsAsync(state, creationDate, log);
+                ConversationHistoryHandler conversationHistoryHandler = new(userName, password);
+                conversations = await conversationHistoryHandler.GetConversationsAsync(state, creationDate, log);
                 if (conversations == null)
                 {
-                     log.LogError("No conversations found using the parameters provided");
+                    log.LogError("No conversations found using the parameters provided");
                     return new StatusCodeResult((int) StatusCodes.Status204NoContent);
                 }
             
