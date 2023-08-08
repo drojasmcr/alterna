@@ -73,25 +73,30 @@ namespace Alterna
             //************************************
 
             string conversationURL = configuration["ConversationURL"];
-            string conversationMessages = configuration["ConversationMessages"];
+            
             foreach (var _conversation in conversations)
             {
                 //*******************************
                 //***GET CONVERSATION MESSAGES***
                 //*******************************
-                conversationMessages = conversationMessages + _conversation.id + "/searchMessages";
+            
                 try
                 {
-                    HttpResponseMessage conversationMessagesResponse = await client.GetAsync(conversationMessages);
-                    if ( conversationMessagesResponse.IsSuccessStatusCode)
+                    ConversationMessageHandler conversationMessageHandler = new(log);
+
+                    ConversationMessage conversationMessage = await conversationMessageHandler.GetConversationMessages(conversationId, DateTime.MinValue);
+                    if ( conversationMessage != null)
                     {
-                        string strResponseSearchMessages = await conversationMessagesResponse.Content.ReadAsStringAsync();
-                        ConversationMessage conversationMessage = JsonSerializer.Deserialize<ConversationMessage>(strResponseSearchMessages);
+                        string jsonMetadata = JsonSerializer.Serialize(conversationMessage);
+                        string fileName = _conversation.id + "_ConversationHistoryMessageData.json";
+                        byte[] data = System.Text.Encoding.UTF8.GetBytes(jsonMetadata);
+                        BlobUploader blobUploader = new();
+                        int result = await blobUploader.UploadAsync(fileName, data);
                     }
                     else
                     {
-                        log.LogError(new Exception(), "An error occurred while invoking the API with the method ConversationHistory/{0}/search. ConversationId: {0}. StatusCode: {1}"
-                            , _conversation.id, conversationMessagesResponse.StatusCode);
+                        log.LogError( "An error occurred while invoking the API with the method ConversationHistory/{0}/search. ConversationId: {0}."
+                            , _conversation.id);
                     }
                 }
                 catch (Exception ex)
@@ -155,10 +160,15 @@ namespace Alterna
             
                         log.LogInformation("Uploading conversation recording");
             
-                        string blobName = fileName + DateTime.Now.ToString();
+                        string blobName = _conversation.id + "_" + fileName;
                         
                         var blobUploader = new BlobUploader();
                         int result = await blobUploader.UploadAsync(blobName, data);
+
+                        if (result == 0)
+                        {
+                            log.LogInformation("Conversation recording uploaded.");
+                        }
                         //***UPLOAD CONVERSATION METADATA
                         //string jsonMetadata = JsonSerializer.Serialize(item);
                         //CloudBlockBlob blobMetadata = container.GetBlockBlobReference(blobName + "_metadata");
