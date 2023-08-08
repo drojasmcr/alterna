@@ -1,13 +1,17 @@
+using Newtonsoft.Json;
 public class ConversartionRecording 
 {
-    public string FileName {get;set;}
-    public string BlobStoreId {get;set;}
-    public string MimeType { get;set;}
-    public int TotalSize {get;set;}
-    public string DownloadLink {get;set;}
-    public long RecordingStartTimestamp {get;set;}
-    public long RecordingEndTimestamp { get; set;}
-    public string Status { get;set;}
-    public string EndReason { get;set;}
-    public string RecordingType {get;set;}
+        [JsonProperty("$_type")]
+        public string _type { get; set; }
+        public string conversationId { get; set; }
+        public string blobStoreId { get; set; }
+        public string fileName { get; set; }
+        public string mimeType { get; set; }
+        public int totalSize { get; set; }
+        public string downloadLink { get; set; }
+        public long recordingStartTimestamp { get; set; }
+        public long recordingEndTimestamp { get; set; }
+        public string status { get; set; }
+        public string endReason { get; set; }
+        public string recordingType { get; set; }
 }

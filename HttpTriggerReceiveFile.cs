@@ -7,7 +7,6 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Text;
-using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 
 using System.Net.Http;
@@ -69,51 +68,41 @@ namespace Alterna
                 conversations.Add(new ConversationHistory { id = conversationId});
             }
 
-            string connectionString = configuration["azureConnectionString"]; 
-            string containerName = configuration["azureContainerName"]; 
-
             //************************************
             //***Lets process each conversation***
             //************************************
 
+            string conversationURL = configuration["ConversationURL"];
+            string conversationMessages = configuration["ConversationMessages"];
             foreach (var _conversation in conversations)
             {
-                string transcripts = string.Empty;
-
-                string conversationURL = configuration["ConversationURL"] + _conversation.id;
-
-                //***GET CONVERSATION TRANSCRIPTS***
+                //*******************************
+                //***GET CONVERSATION MESSAGES***
+                //*******************************
+                conversationMessages = conversationMessages + _conversation.id + "/searchMessages";
                 try
                 {
-                    string conversationTranscriptURL = configuration["ConversationTranscriptURL"] + conversationId + "/searchMessages";
-                    string payload = "{ \"$_type\": \"MessageQuery\", \"searchFilters\": "; 
-                    payload +=  "[ { \"$_type\": \"SendTimestampMessageSearchFilter\", \"field\": \"SEND_TIMESTAMP\", \"operator\": { ";
-                    payload += " \"$_type\": \"EqualsTimestampOperator\", \"type\": \"LOWER_THAN\", \"value\": 1680547872155 } } ], ";
-                    payload += " \"orderBy\": [{ ";
-                    payload += "\"$_type\": \"MessageOrderBy\", \"field\": \"SEND_TIMESTAMP\",\"order\": \"ASCENDING\"";
-                    payload += "}], \"offset\": \"0\", \"limit\": \"1000\" }";
-
-                    StringContent content = new StringContent(payload, Encoding.UTF8, "application/json");
-                    HttpResponseMessage transcriptResponse = await client.PostAsync(conversationTranscriptURL, content);
-                    if ( transcriptResponse.IsSuccessStatusCode )
+                    HttpResponseMessage conversationMessagesResponse = await client.GetAsync(conversationMessages);
+                    if ( conversationMessagesResponse.IsSuccessStatusCode)
                     {
-                        string responseBody = await transcriptResponse.Content.ReadAsStringAsync();   
-                        transcripts = responseBody;                 
+                        string strResponseSearchMessages = await conversationMessagesResponse.Content.ReadAsStringAsync();
+                        ConversationMessage conversationMessage = JsonSerializer.Deserialize<ConversationMessage>(strResponseSearchMessages);
                     }
-                    else 
+                    else
                     {
-                        log.LogError("API request failed while invoking method searchMessages.");
-                        return new StatusCodeResult((int) transcriptResponse.StatusCode);
+                        log.LogError(new Exception(), "An error occurred while invoking the API with the method ConversationHistory/{0}/search. ConversationId: {0}. StatusCode: {1}"
+                            , _conversation.id, conversationMessagesResponse.StatusCode);
                     }
                 }
                 catch (Exception ex)
-                {                
-                    log.LogError(ex, "An error occurred while invoking the API with the method searchMessages.");
-                    return new StatusCodeResult(500);
+                {
+                    log.LogError(ex, "An error occurred while invoking the API with the method ConversationHistory/{0}/search. ", _conversation.id);
                 }
 
+                
+                conversationURL += _conversation.id;
                 //********************************************
-                //*** GET RECORDING INFORMATION - METADATA ***
+                //*** GET CONVERSATION RECORDINGS - METADATA ***
                 //********************************************
                 var recordings = new List<ConversartionRecording>();
 
@@ -123,94 +112,64 @@ namespace Alterna
                     if ( conversationDetailResponse.IsSuccessStatusCode )
                     {
                         string responseBody = await conversationDetailResponse.Content.ReadAsStringAsync();    
-                        using ( JsonDocument document = JsonDocument.Parse(responseBody) )            
-                        {
-                            if (document.RootElement.ValueKind == JsonValueKind.Array)
-                            {
-                                
-                                foreach (JsonElement element  in document.RootElement.EnumerateArray())
-                                {
-                                    var recording = new ConversartionRecording();
-
-                                    recording.FileName = element.GetProperty("fileName").GetString();
-                                    recording.BlobStoreId = element.GetProperty("blobStoreId").GetString();
-                                    recording.MimeType = element.GetProperty("mimeType").GetString();
-                                    recording.TotalSize = element.GetProperty("totalSize").GetInt32();
-                                    recording.DownloadLink = element.GetProperty("downloadLink").GetString();
-                                    recording.RecordingStartTimestamp = element.GetProperty("recordingStartTimestamp").GetInt64();
-                                    recording.RecordingEndTimestamp = element.GetProperty("recordingEndTimestamp").GetInt64();
-                                    recording.Status = element.GetProperty("status").GetString();
-                                    recording.EndReason = element.GetProperty("endReason").GetString();
-                                    recording.RecordingType = element.GetProperty("recordingType").GetString();
-
-                                    recordings.Add(recording);
-                                }
-                            }
-                        }
+                        recordings = JsonSerializer.Deserialize<List<ConversartionRecording>>(responseBody);    
                     }
                     else
                     {
-                        string errorMessage = "Error getting the conversation information.";
-                        return new OkObjectResult(errorMessage);
+                        log.LogError(new Exception(), "An error occurred while invoking the API with the method getConversationRecordings. ConversationId: {0}. StatusCode: {1}"
+                            , _conversation.id, conversationDetailResponse.StatusCode);
                     }
                 }    
                 catch ( Exception ex )        
                 {
-                    log.LogError(ex, "An error occurred while invoking the API with the method getConversationRecordings.");
-                    return new StatusCodeResult(500);
+                    log.LogError(ex, "An error occurred while invoking the API with the method getConversationRecordings. ConversationId: {0}", _conversation.id);
                 }
+
                 //************************************************
                 //*** END GET RECORDING INFORMATION - METADATA ***
                 //************************************************
 
-                //*************************************************
-                //*** LETS UPLOAD THE FILE AND METADATA TO AZURE***
-                //*************************************************
+                if ( recordings.Count == 0) //***No recordings, so let's work with the next value
+                {
+                    log.LogError("Conversation: {0} does not have conversation recordings", _conversation.id);
+                }
+                else
+                {                    
+                    //*************************************************
+                    //*** LETS UPLOAD THE FILE AND METADATA TO AZURE***
+                    //*************************************************
 
-                //PROCESS EACH FILE
-                foreach (var item in recordings)
-                {              
-    
-                    string fileUrl = item.DownloadLink;
-                    string fileName = item.FileName;
-
+                   
+                    //PROCESS EACH FILE
+                    foreach (var item in recordings)
+                    {              
+        
+                        string fileUrl = item.downloadLink;
+                        string fileName = item.fileName;
 
                         //Download the file
-                    IFileDownloader fileDownloader = new LocalFileDownloader();                      
-                    byte[] data = fileDownloader.DownloadFile(fileUrl);
-                                    
-        
-                    //Upload file to Azure
-        
-                    log.LogInformation("C# HTTP trigger function processed a request.");
-                        
-                    
-                    string blobName = fileName;
-        
-                    CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
-                    CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-                    CloudBlobContainer container = blobClient.GetContainerReference(containerName);
-                    
-                    CloudBlockBlob blob = container.GetBlockBlobReference(blobName);
-        
-                    await container.CreateIfNotExistsAsync();
-        
-                    BlobContainerPermissions containerPermissions = new BlobContainerPermissions
-                    {
-                        PublicAccess = BlobContainerPublicAccessType.Blob
-                    };
-        
-                    await container.SetPermissionsAsync(containerPermissions);
-        
-                    using ( MemoryStream  stream = new MemoryStream(data) )
-                    {
-                        await blob.UploadFromStreamAsync(stream);
-                    }
-                }
-                //***************************************************
-                //*** END UPLOADING THE FILE AND METADATA TO AZURE***
-                //***************************************************                
+                        IFileDownloader fileDownloader = new LocalFileDownloader();                      
+                        byte[] data = fileDownloader.DownloadFile(fileUrl);
+                                        
+                        //Upload file to Azure
             
+                        log.LogInformation("Uploading conversation recording");
+            
+                        string blobName = fileName + DateTime.Now.ToString();
+                        
+                        var blobUploader = new BlobUploader();
+                        int result = await blobUploader.UploadAsync(blobName, data);
+                        //***UPLOAD CONVERSATION METADATA
+                        //string jsonMetadata = JsonSerializer.Serialize(item);
+                        //CloudBlockBlob blobMetadata = container.GetBlockBlobReference(blobName + "_metadata");
+
+                        //await using MemoryStream metadataStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonMetadata));
+                        //await blobMetadata.UploadFromStreamAsync(metadataStream);
+                    }
+                    //***************************************************
+                    //*** END UPLOADING THE FILE AND METADATA TO AZURE***
+                    //***************************************************        
+                } //***No Conversation Recordings***        
             } //*** End processing each conversation
             
             string responseMessage = "Function executed successfully. Conversation(s)  uploaded successfully";

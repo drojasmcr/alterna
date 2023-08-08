@@ -40,7 +40,7 @@ namespace Alterna
                 }
 
                 payload += "  \"orderBy\": [{\"$_type\": \"ConversationHistoryOrderBy\",\"field\": \"CREATION_TIMESTAMP\",\"order\": \"ASCENDING\"}],";
-                payload += " \"offset\": 0, \"limit\": 5 }";
+                payload += " \"offset\": 0, \"limit\": 20 }";
 
                 StringContent content = new StringContent(payload, Encoding.UTF8, "application/json");
 
@@ -66,7 +66,6 @@ namespace Alterna
                 log.LogError(ex, "An error occurred while invoking the API with the method searchMessages.");
                 return null;
             }
-            return null;
         }
 
         private double getTimeStampFromDate(DateTime dateTime)
