@@ -9,8 +9,8 @@ namespace Alterna
 {
     public class BlobUploader
     {
-        public string AzureConnectionString { get; set; }
-        public string AzureContainerName { get; set; }
+        protected string AzureConnectionString { get; set; }
+        protected string AzureContainerName { get; set; }
         public BlobUploader()
         {
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder()        
@@ -19,7 +19,7 @@ namespace Alterna
                 .AddEnvironmentVariables();
             IConfigurationRoot configuration = configurationBuilder.Build();
             AzureConnectionString = configuration["azureConnectionString"]; 
-            string containerName = configuration["azureContainerName"]; 
+            AzureContainerName = configuration["azureContainerName"]; 
            
         }
         
@@ -34,17 +34,15 @@ namespace Alterna
             
             await container.CreateIfNotExistsAsync();
 
-            BlobContainerPermissions containerPermissions = new BlobContainerPermissions
+            BlobContainerPermissions containerPermissions = new()
             {
                 PublicAccess = BlobContainerPublicAccessType.Blob
             };
 
             await container.SetPermissionsAsync(containerPermissions);
 
-            using ( MemoryStream  stream = new MemoryStream(data) )
-            {
-                await blob.UploadFromStreamAsync(stream);
-            }
+            using MemoryStream stream = new(data);
+            await blob.UploadFromStreamAsync(stream);
 
             return 0;
         }

@@ -18,15 +18,8 @@ namespace Alterna
             User = user;
             Password = password;
         }
-        public async Task<List<ConversationHistory>> GetConversationsAsync(string state, DateTime startDate, ILogger log)
+        public async Task<List<ConversationHistory>> GetConversationsAsync(string state, string endTimestamp, ILogger log)
         {
-            double startTimeStamp = -1;
-            if (startDate != DateTime.MinValue) //!null value
-            {
-                startTimeStamp = getTimeStampFromDate(startDate);//!null value
-            }
-
-
             
             //GET CONVERSATION TRANSCRIPTS
             try
@@ -34,17 +27,20 @@ namespace Alterna
                 string conversationTranscriptURL = "https://qa.alternasavings.ustage.app/app/rest/v3/conversationhistory/search";
                 string payload = "{  \"$_type\": \"ConversationHistoryQuery\",";
 
-                if ( startTimeStamp != -1 ) // there is a creation time stamp parameter
+                if ( !string.IsNullOrEmpty(endTimestamp)) // there is a end time stamp parameter
                 {
+                    payload += " \"searchFilters\": [{ \"$_type\": \"SendTimestampMessageSearchFilter\", \"field\": \"END_TIMESTAMP\",";
+                    payload += " \"operator\": {  \"$_type\": \"EqualsTimestampOperator\", \"type\": \"LOWER_THAN\", \"value\": \"";
+                    payload += endTimestamp +  "\"}}],";
 
                 }
 
                 payload += "  \"orderBy\": [{\"$_type\": \"ConversationHistoryOrderBy\",\"field\": \"CREATION_TIMESTAMP\",\"order\": \"ASCENDING\"}],";
-                payload += " \"offset\": 0, \"limit\": 20 }";
+                payload += " \"offset\": 0, \"limit\": 40 }";
 
-                StringContent content = new StringContent(payload, Encoding.UTF8, "application/json");
+                StringContent content = new(payload, Encoding.UTF8, "application/json");
 
-                HttpClient client = new HttpClient();
+                HttpClient client = new();
                 string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{User}:{Password}"));
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);  
 
@@ -57,7 +53,7 @@ namespace Alterna
                 }
                 else 
                 {
-                    log.LogError("API request failed while invoking method searchMessages.");
+                    log.LogError("API request failed while invoking method searchMessages. StatusCode: {0}", searchResponse.StatusCode);
                     return null;
                 }
             }
@@ -66,12 +62,6 @@ namespace Alterna
                 log.LogError(ex, "An error occurred while invoking the API with the method searchMessages.");
                 return null;
             }
-        }
-
-        private double getTimeStampFromDate(DateTime dateTime)
-        {
-            var timeStamp = dateTime.Subtract(DateTime.UnixEpoch).TotalSeconds;
-            return timeStamp;
         }
     }
 }

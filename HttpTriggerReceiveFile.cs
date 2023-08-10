@@ -46,16 +46,10 @@ namespace Alterna
             if (string.IsNullOrEmpty(conversationId)) //If true, then we will go and look for conversations with the other parameters
             {
                 string state = req.Query["State"];
-                string createdTimestamp = req.Query["CreationDateTime"];
-                
-                DateTime creationDate = DateTime.MinValue;
+                string endTimestamp = req.Query["endDateTime"];
 
-                if (!string.IsNullOrEmpty(createdTimestamp)) //No timestamp parameter
-                {
-                    creationDate = DateTime.Parse(createdTimestamp);
-                }
                 ConversationHistoryHandler conversationHistoryHandler = new(userName, password);
-                conversations = await conversationHistoryHandler.GetConversationsAsync(state, creationDate, log);
+                conversations = await conversationHistoryHandler.GetConversationsAsync(state, endTimestamp, log);
                 if (conversations == null)
                 {
                     log.LogError("No conversations found using the parameters provided");
@@ -84,7 +78,7 @@ namespace Alterna
                 {
                     ConversationMessageHandler conversationMessageHandler = new(log);
 
-                    ConversationMessage conversationMessage = await conversationMessageHandler.GetConversationMessages(conversationId, DateTime.MinValue);
+                    ConversationMessage conversationMessage = await conversationMessageHandler.GetConversationMessages(_conversation.id, DateTime.MinValue);
                     if ( conversationMessage != null)
                     {
                         string jsonMetadata = JsonSerializer.Serialize(conversationMessage);
@@ -105,7 +99,7 @@ namespace Alterna
                 }
 
                 
-                conversationURL += _conversation.id;
+                string newConversationURL = conversationURL + _conversation.id;
                 //********************************************
                 //*** GET CONVERSATION RECORDINGS - METADATA ***
                 //********************************************
@@ -113,7 +107,7 @@ namespace Alterna
 
                 try 
                 {
-                    HttpResponseMessage conversationDetailResponse = await client.GetAsync(conversationURL);
+                    HttpResponseMessage conversationDetailResponse = await client.GetAsync(newConversationURL);
                     if ( conversationDetailResponse.IsSuccessStatusCode )
                     {
                         string responseBody = await conversationDetailResponse.Content.ReadAsStringAsync();    
@@ -169,12 +163,6 @@ namespace Alterna
                         {
                             log.LogInformation("Conversation recording uploaded.");
                         }
-                        //***UPLOAD CONVERSATION METADATA
-                        //string jsonMetadata = JsonSerializer.Serialize(item);
-                        //CloudBlockBlob blobMetadata = container.GetBlockBlobReference(blobName + "_metadata");
-
-                        //await using MemoryStream metadataStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonMetadata));
-                        //await blobMetadata.UploadFromStreamAsync(metadataStream);
                     }
                     //***************************************************
                     //*** END UPLOADING THE FILE AND METADATA TO AZURE***
