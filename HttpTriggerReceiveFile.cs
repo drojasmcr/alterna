@@ -45,11 +45,11 @@ namespace Alterna
 
             if (string.IsNullOrEmpty(conversationId)) //If true, then we will go and look for conversations with the other parameters
             {
-                string state = req.Query["State"];
-                string endTimestamp = req.Query["endDateTime"];
+                string startTimeStamp = req.Query["startTimeStamp"];
+                string endTimestamp = req.Query["endTimeStamp"];
 
                 ConversationHistoryHandler conversationHistoryHandler = new(userName, password);
-                conversations = await conversationHistoryHandler.GetConversationsAsync(state, endTimestamp, log);
+                conversations = await conversationHistoryHandler.GetConversationsAsync(startTimeStamp, endTimestamp, log);
                 if (conversations == null)
                 {
                     log.LogError("No conversations found using the parameters provided");
@@ -83,7 +83,7 @@ namespace Alterna
                     {
                         string jsonMetadata = JsonSerializer.Serialize(conversationMessage);
                         string fileName = _conversation.id + "_ConversationHistoryMessageData.json";
-                        byte[] data = System.Text.Encoding.UTF8.GetBytes(jsonMetadata);
+                        byte[] data = Encoding.UTF8.GetBytes(jsonMetadata);
                         BlobUploader blobUploader = new();
                         int result = await blobUploader.UploadAsync(fileName, data);
                     }

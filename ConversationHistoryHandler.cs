@@ -18,7 +18,7 @@ namespace Alterna
             User = user;
             Password = password;
         }
-        public async Task<List<ConversationHistory>> GetConversationsAsync(string state, string endTimestamp, ILogger log)
+        public async Task<List<ConversationHistory>> GetConversationsAsync(string startTimestamp, string endTimestamp, ILogger log)
         {
             
             //GET CONVERSATION TRANSCRIPTS
@@ -27,16 +27,17 @@ namespace Alterna
                 string conversationTranscriptURL = "https://qa.alternasavings.ustage.app/app/rest/v3/conversationhistory/search";
                 string payload = "{  \"$_type\": \"ConversationHistoryQuery\",";
 
-                if ( !string.IsNullOrEmpty(endTimestamp)) // there is a end time stamp parameter
+                if ( !string.IsNullOrEmpty(startTimestamp) || !string.IsNullOrEmpty(endTimestamp)) // there is a start or an end time stamp parameter - or both
                 {
-                    payload += " \"searchFilters\": [{ \"$_type\": \"SendTimestampMessageSearchFilter\", \"field\": \"END_TIMESTAMP\",";
-                    payload += " \"operator\": {  \"$_type\": \"EqualsTimestampOperator\", \"type\": \"LOWER_THAN\", \"value\": \"";
-                    payload += endTimestamp +  "\"}}],";
+                    payload += " \"searchFilters\": [ ";
+                    payload += GetFilter(startTimestamp, "GREATER_THAN") + "},";
+                    payload += GetFilter(endTimestamp, "LOWER_THAN");
+                    payload +=  "}],";
 
                 }
 
                 payload += "  \"orderBy\": [{\"$_type\": \"ConversationHistoryOrderBy\",\"field\": \"CREATION_TIMESTAMP\",\"order\": \"ASCENDING\"}],";
-                payload += " \"offset\": 0, \"limit\": 40 }";
+                payload += " \"offset\": 0, \"limit\": 25 }";
 
                 StringContent content = new(payload, Encoding.UTF8, "application/json");
 
@@ -62,6 +63,17 @@ namespace Alterna
                 log.LogError(ex, "An error occurred while invoking the API with the method searchMessages.");
                 return null;
             }
+        }
+
+        static string GetFilter(string currentTimestamp, string filterOperator)
+        {
+            string payload = string.Empty;
+            if (!string.IsNullOrEmpty(currentTimestamp))
+            {
+                payload += "{ \"$_type\": \"SendTimestampMessageSearchFilter\", \"field\": \"CREATION_TIMESTAMP\",";
+                payload += " \"operator\": {  \"$_type\": \"EqualsTimestampOperator\", \"type\": \"" + filterOperator + "\", \"value\": \"" + currentTimestamp + "\"}";
+            }
+            return payload;
         }
     }
 }
