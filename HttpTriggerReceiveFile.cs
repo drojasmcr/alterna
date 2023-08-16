@@ -62,16 +62,16 @@ namespace Alterna
                 conversations.Add(new ConversationHistory { id = conversationId});
             }
 
-            //************************************
-            //***Lets process each conversation***
-            //************************************
+            //********************************************
+            //*** Lets process each conversation found ***
+            //********************************************
 
             string conversationURL = configuration["ConversationURL"];
             
             foreach (var _conversation in conversations)
             {
                 //*******************************
-                //***GET CONVERSATION MESSAGES***
+                //***        GET CHATS        ***
                 //*******************************
             
                 try
@@ -79,13 +79,13 @@ namespace Alterna
                     ConversationMessageHandler conversationMessageHandler = new(log);
 
                     ConversationMessage conversationMessage = await conversationMessageHandler.GetConversationMessages(_conversation.id, DateTime.MinValue);
-                    if ( conversationMessage != null)
+                    if ( conversationMessage != null) //If there are chats, lets upload them
                     {
                         string jsonMetadata = JsonSerializer.Serialize(conversationMessage);
                         string fileName = _conversation.id + "_ConversationHistoryMessageData.json";
                         byte[] data = Encoding.UTF8.GetBytes(jsonMetadata);
                         BlobUploader blobUploader = new();
-                        int result = await blobUploader.UploadAsync(fileName, data);
+                        int result = await blobUploader.UploadAsync(fileName, data, _conversation, log);
                     }
                     else
                     {
@@ -101,7 +101,8 @@ namespace Alterna
                 
                 string newConversationURL = conversationURL + _conversation.id;
                 //********************************************
-                //*** GET CONVERSATION RECORDINGS - METADATA ***
+                //*** GET CONVERSATION RECORDINGS - METADATA *
+                // Lets search for conversation recordings
                 //********************************************
                 var recordings = new List<ConversartionRecording>();
 
@@ -125,7 +126,7 @@ namespace Alterna
                 }
 
                 //************************************************
-                //*** END GET RECORDING INFORMATION - METADATA ***
+                //***     END GET RECORDING INFORMATION        ***
                 //************************************************
 
                 if ( recordings.Count == 0) //***No recordings, so let's work with the next value
@@ -134,12 +135,8 @@ namespace Alterna
                 }
                 else
                 {                    
-                    //*************************************************
-                    //*** LETS UPLOAD THE FILE AND METADATA TO AZURE***
-                    //*************************************************
 
-                   
-                    //PROCESS EACH FILE
+                    //PROCESS FILES
                     foreach (var item in recordings)
                     {              
         
@@ -157,7 +154,7 @@ namespace Alterna
                         string blobName = _conversation.id + "_" + fileName;
                         
                         var blobUploader = new BlobUploader();
-                        int result = await blobUploader.UploadAsync(blobName, data);
+                        int result = await blobUploader.UploadAsync(blobName, data, _conversation, log);
 
                         if (result == 0)
                         {

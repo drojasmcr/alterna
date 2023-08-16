@@ -5,6 +5,12 @@ using System;
 using System.Threading.Tasks;
 using System.IO;
 
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Specialized;
+using Azure.Storage.Blobs.Models;
+using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
+
 namespace Alterna
 {
     public class BlobUploader
@@ -23,26 +29,41 @@ namespace Alterna
            
         }
         
-        public async Task<int> UploadAsync(string blobName, byte[] data)
+        public async Task<int> UploadAsync(string blobName, byte[] data, ConversationHistory conversationHistory, ILogger logger)
         {
-
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(AzureConnectionString);
-            CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-            CloudBlobContainer container = blobClient.GetContainerReference(AzureContainerName);
-
-            CloudBlockBlob blob = container.GetBlockBlobReference(blobName);
-            
-            await container.CreateIfNotExistsAsync();
-
-            BlobContainerPermissions containerPermissions = new()
-            {
-                PublicAccess = BlobContainerPublicAccessType.Blob
-            };
-
-            await container.SetPermissionsAsync(containerPermissions);
+            var blobServiceClient = new BlobServiceClient(AzureConnectionString);
+            BlobContainerClient blobContainerClient = blobServiceClient.GetBlobContainerClient(AzureContainerName);
+            BlockBlobClient blockBlobClient = blobContainerClient.GetBlockBlobClient(blobName);
 
             using MemoryStream stream = new(data);
-            await blob.UploadFromStreamAsync(stream);
+            await blockBlobClient.UploadAsync(stream);
+
+            int result = await SetTags(blockBlobClient, conversationHistory, logger);
+
+            return 0;
+        }
+
+        public static async Task<int> SetTags(BlockBlobClient blobClient, ConversationHistory conversationHistory, ILogger logger)
+        {
+            try 
+            {
+            Dictionary<string, string> tags = 
+                new Dictionary<string, string>
+            {
+                { "createdTimestamp", conversationHistory.createdTimestamp.ToString()},
+                { "endTimestamp", conversationHistory.endTimestamp.ToString() },
+                { "State", conversationHistory.state },
+                { "initialEngagementType", conversationHistory.initialEngagementType },
+                { "displayName", conversationHistory.recipient.displayName },
+                { "accountId", conversationHistory.recipient.accountId }
+            };
+
+            await blobClient.SetMetadataAsync(tags);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error adding metadata. Conversation Id {0}, DiplayName: {1}", conversationHistory.id, conversationHistory.recipient.displayName);
+            }
 
             return 0;
         }

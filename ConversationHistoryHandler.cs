@@ -37,7 +37,7 @@ namespace Alterna
                 }
 
                 payload += "  \"orderBy\": [{\"$_type\": \"ConversationHistoryOrderBy\",\"field\": \"CREATION_TIMESTAMP\",\"order\": \"ASCENDING\"}],";
-                payload += " \"offset\": 0, \"limit\": 25 }";
+                payload += " \"offset\": 0, \"limit\": 10 }";
 
                 StringContent content = new(payload, Encoding.UTF8, "application/json");
 
