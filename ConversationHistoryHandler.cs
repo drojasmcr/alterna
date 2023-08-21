@@ -45,6 +45,10 @@ namespace Alterna
                 string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{User}:{Password}"));
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);  
 
+                log.LogInformation("DEBUG:URL {0}", conversationTranscriptURL);
+                log.LogInformation("DEBUG: User: {0}, Password {1}", User, Password);
+                log.LogInformation("DEBUG: Payload: {0}", payload);
+
                 HttpResponseMessage searchResponse = await client.PostAsync(conversationTranscriptURL, content);
                 if ( searchResponse.IsSuccessStatusCode )
                 {
