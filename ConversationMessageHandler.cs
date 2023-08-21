@@ -32,21 +32,11 @@ namespace Alterna
             Logger = log;
         }
 
-        public async Task<ConversationMessage> GetConversationMessages(string conversationId, DateTime startDate)
+        public async Task<ConversationMessage> GetConversationMessages(string conversationId)
         {
-                double startTimeStamp = -1;
-                if (startDate != DateTime.MinValue) //!null value
-                {
-                    startTimeStamp = GetTimeStampFromDate(startDate);//!null value
-                }
-                string payload = "{  \"$_type\": \"MessageQuery\",";
+                
 
-                if ( startTimeStamp != -1 ) // there is a creation time stamp parameter
-                {
-
-                }
-
-                payload += "  \"orderBy\": [{\"$_type\": \"MessageOrderBy\",\"field\": \"SEND_TIMESTAMP\",\"order\": \"ASCENDING\"}],";
+                string payload = "{    \"$_type\": \"MessageQuery\", \"orderBy\": [{\"$_type\": \"MessageOrderBy\",\"field\": \"SEND_TIMESTAMP\",\"order\": \"ASCENDING\"}],";
                 payload += " \"offset\": 0, \"limit\": 1000 }";
 
                 ConversationMessages = ConversationMessages + conversationId + "/searchMessages";
@@ -72,25 +62,5 @@ namespace Alterna
                 }
         }
 
-/*
-{
-    "searchFilters": [
-        {
-            "$_type": "SendTimestampMessageSearchFilter",
-            "field": "SEND_TIMESTAMP",
-            "operator": {
-                "$_type": "EqualsTimestampOperator",
-                "type": "LOWER_THAN",
-                "value": 1680547872155
-            }
-        }
-    ],
-}*/
-
-        private double GetTimeStampFromDate(DateTime dateTime)
-        {
-            var timeStamp = dateTime.Subtract(DateTime.UnixEpoch).TotalSeconds;
-            return timeStamp;
-        }
     }
 }

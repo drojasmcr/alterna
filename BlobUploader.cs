@@ -47,18 +47,26 @@ namespace Alterna
         {
             try 
             {
-            Dictionary<string, string> tags = 
-                new Dictionary<string, string>
-            {
-                { "createdTimestamp", conversationHistory.createdTimestamp.ToString()},
-                { "endTimestamp", conversationHistory.endTimestamp.ToString() },
-                { "State", conversationHistory.state },
-                { "initialEngagementType", conversationHistory.initialEngagementType },
-                { "displayName", conversationHistory.recipient.displayName },
-                { "accountId", conversationHistory.recipient.accountId }
-            };
+                conversationHistory.state ??= "NO STATE";
+                conversationHistory.createdTimestamp ??= 0;
+                conversationHistory.endTimestamp ??= 0;
+                conversationHistory.initialEngagementType ??= "NO ENGAGEMENT TYPE";
+                conversationHistory.recipient ??= new Recipient { displayName = "NO DISPLAY NAME"};
 
-            await blobClient.SetMetadataAsync(tags);
+                Dictionary<string, string> tags = 
+                    new Dictionary<string, string>
+                {
+                    { "createdTimestamp", conversationHistory.createdTimestamp.ToString()},
+                    { "endTimestamp", conversationHistory.endTimestamp.ToString() },
+                    { "State", conversationHistory.state },
+                    { "initialEngagementType", conversationHistory.initialEngagementType },
+                    { "displayName", conversationHistory.recipient.displayName },
+                    { "ConversationHistoryid", conversationHistory.id }
+                };
+
+                await blobClient.SetMetadataAsync(tags);
+
+                await blobClient.SetTagsAsync(tags);
             }
             catch (Exception ex)
             {

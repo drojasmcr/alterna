@@ -50,7 +50,7 @@ namespace Alterna
 
                 ConversationHistoryHandler conversationHistoryHandler = new(userName, password);
                 conversations = await conversationHistoryHandler.GetConversationsAsync(startTimeStamp, endTimestamp, log);
-                if (conversations == null)
+                if (conversations == null || conversations.Count == 0)
                 {
                     log.LogError("No conversations found using the parameters provided");
                     return new StatusCodeResult((int) StatusCodes.Status204NoContent);
@@ -78,7 +78,7 @@ namespace Alterna
                 {
                     ConversationMessageHandler conversationMessageHandler = new(log);
 
-                    ConversationMessage conversationMessage = await conversationMessageHandler.GetConversationMessages(_conversation.id, DateTime.MinValue);
+                    ConversationMessage conversationMessage = await conversationMessageHandler.GetConversationMessages(_conversation.id);
                     if ( conversationMessage != null) //If there are chats, lets upload them
                     {
                         string jsonMetadata = JsonSerializer.Serialize(conversationMessage);
@@ -138,21 +138,27 @@ namespace Alterna
 
                     //PROCESS FILES
                     foreach (var item in recordings)
-                    {              
-        
+                    {
+
                         string fileUrl = item.downloadLink;
                         string fileName = item.fileName;
 
                         //Download the file
-                        IFileDownloader fileDownloader = new LocalFileDownloader();                      
+                        IFileDownloader fileDownloader = new LocalFileDownloader();
                         byte[] data = fileDownloader.DownloadFile(fileUrl);
-                                        
+
                         //Upload file to Azure
-            
+
                         log.LogInformation("Uploading conversation recording");
-            
+
                         string blobName = _conversation.id + "_" + fileName;
                         
+                        _conversation.createdTimestamp = item.recordingStartTimestamp;
+                        _conversation.endTimestamp = item.recordingEndTimestamp;
+                        _conversation.state = item.status;
+                        _conversation.initialEngagementType = "NA";
+                        _conversation.recipient.displayName = "NA";
+
                         var blobUploader = new BlobUploader();
                         int result = await blobUploader.UploadAsync(blobName, data, _conversation, log);
 
@@ -169,6 +175,9 @@ namespace Alterna
             
             string responseMessage = "Function executed successfully. Conversation(s)  uploaded successfully";
             return new OkObjectResult(responseMessage);
+
         }
+
+
     }
 }
